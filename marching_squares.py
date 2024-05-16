@@ -6,20 +6,26 @@ height = 60
 width = 60
 point_size = 15
 
-def kolko(x,y, srodek):
+# WSTEPNE ZALOZENIE - KAZDE KOLKO MA PROMIEN = 5
+
+def kolko(x, y, srodek):
     return (x-srodek[0])**2 + (y-srodek[1])**2
 
-def funkcja2(x,y):
-    return (x-30)**2 + (y-30)**2
+def kolka(x,y,srodki,promienie):
+    suma = 0
+    for i,srodek in enumerate(srodki):
+        if (x-srodek[0])**2 + (y-srodek[1])**2 == 0:
+            suma+=1
+        else:
+            suma += (promienie[i]**2) / ((x-srodek[0])**2 + (y-srodek[1])**2)
+    return suma
 
-def serce(x,y,srodek):
-    wart = kolko(x,y,srodek)
-    if wart <5**2:
+def serce(x,y,srodki,promienie):
+    wart = kolka(x,y,srodki,promienie)
+    if wart >=1:
         return 1
     else:
         return 0
-
-
 
 # Inicjalizacja pygame
 pygame.init()
@@ -40,11 +46,16 @@ RED = (255,0,0)
 def get_state(a,b,c,d):
     return a*8+b*4+c*2+d
 
-def interpolacja(p1,p2,mid):
-    return (5**2 - kolko(p1[0],p1[1],mid))/(kolko(p2[0],p2[1],mid) - kolko(p1[0],p1[1],mid)) #tu promien^2
+def interpolacja(p1,p2,mids,promienie):
+    dist = kolka(p2[0], p2[1], mids, promienie) - kolka(p1[0], p1[1], mids, promienie)
+    if dist == 0:
+        return 0
+    else:
+        return (1**2 - kolka(p1[0], p1[1], mids, promienie)) / dist
+    #return (1**2 - kolka(p1[0],p1[1],mids,promienie))/(kolka(p2[0],p2[1],mids,promienie) - kolka(p1[0],p1[1],mids,promienie))
 
 
-def find_isolines(field,mid):
+def find_isolines(field,mids,promienie):
     lines = []
     for i in range(height - 1):
         for j in range(width - 1):
@@ -59,10 +70,10 @@ def find_isolines(field,mid):
             # c = (i+1, j+0.5)
             # d = (i+0.5, j)
 
-            a = (i,j + interpolacja(A,B,mid))
-            b = (i + interpolacja(B,C,mid), j+1)
-            c = (i+1,j + interpolacja(D,C,mid))
-            d = (i + interpolacja(A,D,mid), j)
+            a = (i,j + interpolacja(A,B,mids,promienie))
+            b = (i + interpolacja(B,C,mids,promienie), j+1)
+            c = (i+1,j + interpolacja(D,C,mids,promienie))
+            d = (i + interpolacja(A,D,mids,promienie), j)
             state = get_state(field[i][j], field[i][j+1], field[i + 1][j + 1], field[i+1][j])
             if state == 1:
                 lines.append((c, d))
@@ -98,44 +109,80 @@ def find_isolines(field,mid):
 
 # Rysowanie punktów
 
-mids = [[30,5],[30,55]]
+mids = [[30,5],[25,55]]
+promienie = [5,5]
 counters = [1,-1]
 
 running = True
 clock = pygame.time.Clock()
 
 while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+    
     screen.fill(GREY)
+    field = np.empty((height, width))
+    for i in range(height):
+        for j in range(width):
+            field[i][j] = serce(i, j, mids,promienie)
+
+    for i in range(height):
+        for j in range(width):
+            if field[i, j]:
+                pygame.draw.circle(screen, RED, (j * point_size, i * point_size), point_size // 3.14)
+    #         else:
+    #             pygame.draw.circle(screen, WHITE, (j * point_size, i * point_size), point_size // 3.14)
+
+    isolines = find_isolines(field,mids,promienie)
+    for line in isolines:
+        pygame.draw.line(screen, RED, (line[0][1] * point_size, line[0][0] * point_size),
+                         (line[1][1] * point_size, line[1][0] * point_size), 3)
+        
     for c,mid in enumerate(mids):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-        field = np.empty((height, width))
-        for i in range(height):
-            for j in range(width):
-                field[i][j] = serce(i, j, mid)
-        # for i in range(height):
-        #     for j in range(width):
-        #         if field[i, j]:
-        #             pygame.draw.circle(screen, BLACK, (j * point_size, i * point_size), point_size // 3.14)
-        #         else:
-        #             pygame.draw.circle(screen, WHITE, (j * point_size, i * point_size), point_size // 3.14)
-
-        isolines = find_isolines(field,mid)
-        for line in isolines:
-            pygame.draw.line(screen, RED, (line[0][1] * point_size, line[0][0] * point_size),
-                             (line[1][1] * point_size, line[1][0] * point_size), 3)
-
-        mid[1] += counters[c]
-        if mid[1] == width - 5:
+        mid[1]+=counters[c]
+        if mid[1] == width-promienie[c]:
             counters[c] = -1
-        if mid[1] == 4:
+        if mid[1] == promienie[c]-1:
             counters[c] = 1
 
-        # Wyświetlenie zmian
-        pygame.display.flip()
-        clock.tick(30)
+
+    # Wyświetlenie zmian
+    pygame.display.flip()
+    clock.tick(30)
+
+# while running:
+#     screen.fill(GREY)
+#     for c,mid in enumerate(mids):
+#         for event in pygame.event.get():
+#             if event.type == pygame.QUIT:
+#                 running = False
+
+#         field = np.empty((height, width))
+#         for i in range(height):
+#             for j in range(width):
+#                 field[i][j] = serce(i, j, mid)
+#         # for i in range(height):
+#         #     for j in range(width):
+#         #         if field[i, j]:
+#         #             pygame.draw.circle(screen, BLACK, (j * point_size, i * point_size), point_size // 3.14)
+#         #         else:
+#         #             pygame.draw.circle(screen, WHITE, (j * point_size, i * point_size), point_size // 3.14)
+
+#         isolines = find_isolines(field,mid)
+#         for line in isolines:
+#             pygame.draw.line(screen, RED, (line[0][1] * point_size, line[0][0] * point_size),
+#                              (line[1][1] * point_size, line[1][0] * point_size), 3)
+
+#         mid[1] += counters[c]
+#         if mid[1] == width - 5:
+#             counters[c] = -1
+#         if mid[1] == 4:
+#             counters[c] = 1
+
+#         # Wyświetlenie zmian
+#         pygame.display.flip()
+#         clock.tick(30)
 
 # Wyjście z programu
 pygame.quit()
