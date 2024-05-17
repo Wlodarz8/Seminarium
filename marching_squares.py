@@ -6,8 +6,6 @@ height = 60
 width = 60
 point_size = 15
 
-# WSTEPNE ZALOZENIE - KAZDE KOLKO MA PROMIEN = 5
-
 def kolko(x, y, srodek):
     return (x-srodek[0])**2 + (y-srodek[1])**2
 
@@ -109,28 +107,31 @@ def find_isolines(field,mids,promienie):
 
 # Rysowanie punktów
 
-mids = [[30,5],[25,55]]
-promienie = [5,5]
-counters = [1,-1]
+mids = [[30,5],[25,55],[5,10],[55,30],[30,30],[55,40]]
+promienie = [5,6,2,4,3,3]
+counters = [[1,-1],[1,1],[1,0],[-1,-1],[0,1],[-1,0]]
+
+# w prawo [0,1], w lewo [0, -1], w gore [-1,0], w dol [1,0]
+# lewa-gora [-1,-1], lewy-dol [1,-1], prawa-gora [-1,1], prawy-dol [1,1]
 
 running = True
-clock = pygame.time.Clock()
+#clock = pygame.time.Clock()
 
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
     
-    screen.fill(GREY)
+    screen.fill(BLACK)
     field = np.empty((height, width))
     for i in range(height):
         for j in range(width):
             field[i][j] = serce(i, j, mids,promienie)
 
-    for i in range(height):
-        for j in range(width):
-            if field[i, j]:
-                pygame.draw.circle(screen, RED, (j * point_size, i * point_size), point_size // 3.14)
+    # for i in range(height):
+    #     for j in range(width):
+    #         if field[i, j]:
+    #             pygame.draw.circle(screen, RED, (j * point_size, i * point_size), point_size // 3.14)
     #         else:
     #             pygame.draw.circle(screen, WHITE, (j * point_size, i * point_size), point_size // 3.14)
 
@@ -140,49 +141,27 @@ while running:
                          (line[1][1] * point_size, line[1][0] * point_size), 3)
         
     for c,mid in enumerate(mids):
-        mid[1]+=counters[c]
-        if mid[1] == width-promienie[c]:
-            counters[c] = -1
-        if mid[1] == promienie[c]-1:
-            counters[c] = 1
+        wektor = counters[c]
+        mid[0]+=wektor[0]
+        mid[1]+=wektor[1]
+
+         # Odbicie od ścian poziomych
+        if mid[1] >= width - promienie[c]-1:
+            wektor[1] = -abs(wektor[1])  # Ruch w lewo
+        if mid[1] <= promienie[c]:
+            wektor[1] = abs(wektor[1])   # Ruch w prawo
+
+        # Odbicie od ścian pionowych
+        if mid[0] >= height - promienie[c]-1:
+            wektor[0] = -abs(wektor[0])  # Ruch w górę
+        if mid[0] <= promienie[c]:
+            wektor[0] = abs(wektor[0])   # Ruch w dół
+
+        counters[c] = wektor
 
 
     # Wyświetlenie zmian
     pygame.display.flip()
-    clock.tick(30)
-
-# while running:
-#     screen.fill(GREY)
-#     for c,mid in enumerate(mids):
-#         for event in pygame.event.get():
-#             if event.type == pygame.QUIT:
-#                 running = False
-
-#         field = np.empty((height, width))
-#         for i in range(height):
-#             for j in range(width):
-#                 field[i][j] = serce(i, j, mid)
-#         # for i in range(height):
-#         #     for j in range(width):
-#         #         if field[i, j]:
-#         #             pygame.draw.circle(screen, BLACK, (j * point_size, i * point_size), point_size // 3.14)
-#         #         else:
-#         #             pygame.draw.circle(screen, WHITE, (j * point_size, i * point_size), point_size // 3.14)
-
-#         isolines = find_isolines(field,mid)
-#         for line in isolines:
-#             pygame.draw.line(screen, RED, (line[0][1] * point_size, line[0][0] * point_size),
-#                              (line[1][1] * point_size, line[1][0] * point_size), 3)
-
-#         mid[1] += counters[c]
-#         if mid[1] == width - 5:
-#             counters[c] = -1
-#         if mid[1] == 4:
-#             counters[c] = 1
-
-#         # Wyświetlenie zmian
-#         pygame.display.flip()
-#         clock.tick(30)
 
 # Wyjście z programu
 pygame.quit()
