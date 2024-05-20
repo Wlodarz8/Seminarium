@@ -6,21 +6,21 @@ height = 60
 width = 60
 point_size = 15
 
-def kolko(x, y, srodek):
-    return (x-srodek[0])**2 + (y-srodek[1])**2
+def diamond(x, y, srodek):
+    return abs(x-srodek[0]) + abs(y-srodek[1])
 
-def kolka(x,y,srodki,promienie):
+def diamonds(x,y,srodki,promienie):
     suma = 0
     for i,srodek in enumerate(srodki):
-        if (x-srodek[0])**2 + (y-srodek[1])**2 == 0:
+        if diamond(x,y,srodek) == 0:
             suma+=1
         else:
-            suma += (promienie[i]**2) / ((x-srodek[0])**2 + (y-srodek[1])**2)
+            suma += (promienie[i]) / diamond(x,y,srodek)
     return suma
 
-def serce(x,y,srodki,promienie):
-    wart = kolka(x,y,srodki,promienie)
-    if wart >=1:
+def cell(x,y,srodki,promienie):
+    wart = diamonds(x,y,srodki,promienie)
+    if wart >= 1:
         return 1
     else:
         return 0
@@ -45,13 +45,11 @@ def get_state(a,b,c,d):
     return a*8+b*4+c*2+d
 
 def interpolacja(p1,p2,mids,promienie):
-    dist = kolka(p2[0], p2[1], mids, promienie) - kolka(p1[0], p1[1], mids, promienie)
+    dist = diamonds(p2[0], p2[1], mids, promienie) - diamonds(p1[0], p1[1], mids, promienie)
     if dist == 0:
         return 0
     else:
-        return (1**2 - kolka(p1[0], p1[1], mids, promienie)) / dist
-    #return (1**2 - kolka(p1[0],p1[1],mids,promienie))/(kolka(p2[0],p2[1],mids,promienie) - kolka(p1[0],p1[1],mids,promienie))
-
+        return (1**2 - diamonds(p1[0], p1[1], mids, promienie)) / dist
 
 def find_isolines(field,mids,promienie):
     lines = []
@@ -72,6 +70,7 @@ def find_isolines(field,mids,promienie):
             b = (i + interpolacja(B,C,mids,promienie), j+1)
             c = (i+1,j + interpolacja(D,C,mids,promienie))
             d = (i + interpolacja(A,D,mids,promienie), j)
+
             state = get_state(field[i][j], field[i][j+1], field[i + 1][j + 1], field[i+1][j])
             if state == 1:
                 lines.append((c, d))
@@ -108,14 +107,14 @@ def find_isolines(field,mids,promienie):
 # Rysowanie punktów
 
 mids = [[30,5],[25,55],[5,10],[55,30],[30,30],[55,40]]
-promienie = [5,6,2,4,3,3]
+promienie = [3,3,2,1,3,2]
 counters = [[1,-1],[1,1],[1,0],[-1,-1],[0,1],[-1,0]]
 
 # w prawo [0,1], w lewo [0, -1], w gore [-1,0], w dol [1,0]
 # lewa-gora [-1,-1], lewy-dol [1,-1], prawa-gora [-1,1], prawy-dol [1,1]
 
 running = True
-#clock = pygame.time.Clock()
+clock = pygame.time.Clock()
 
 while running:
     for event in pygame.event.get():
@@ -126,7 +125,7 @@ while running:
     field = np.empty((height, width))
     for i in range(height):
         for j in range(width):
-            field[i][j] = serce(i, j, mids,promienie)
+            field[i][j] = cell(i, j, mids,promienie)
 
     # for i in range(height):
     #     for j in range(width):
@@ -159,9 +158,9 @@ while running:
 
         counters[c] = wektor
 
-
     # Wyświetlenie zmian
     pygame.display.flip()
+    #clock.tick(20)
 
 # Wyjście z programu
 pygame.quit()
